@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>In the Shadow of the Volcano</title>
+<meta name="description" content="Every Holocene volcano on one map with the number of people living within 10, 30 and 100 km of it: {{n_volc|int}} volcanoes from the Smithsonian Global Volcanism Program, by country, by crowd and by last eruption.">
+<meta property="og:title" content="In the shadow of the volcano: at least {{glob.30.floor|m}} people live within 30 km of one">
+<meta property="og:description" content="{{n30_1m|int}} volcanoes have a million or more people within 30 km. A map of the world's Holocene volcanoes, who lives near them, and when they last erupted.">
+<meta property="og:image" content="https://maps.tristanhotham.com/volcano-neighbours/header.png">
+<meta property="og:url" content="https://maps.tristanhotham.com/volcano-neighbours/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800;9..144,900&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+/* Ash paper, basalt ink, lava red, sulphur yellow and a deep sea blue. Eruption colours are set in the script. */
+:root{
+  --bg:#F7F4EF; --panel:#ECE7DF; --fg:#1F1C1B; --muted:#6A635E; --rule:#E1DAD0; --card:#FFFDF9; --border:#D0C6B9;
+  --hot:#B3261E; --cool:#2F5D8A; --gold:#C98A0B; --land:#E9E3D8; --sea:#F1EFEA;
+  --display:"Fraunces",Georgia,"Times New Roman",serif;
+  --body:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#161413; --panel:#211E1C; --fg:#EFEAE4; --muted:#A79F98; --rule:#37322E; --card:#1C1A18; --border:#4A433D;
+  --hot:#F0695C; --cool:#8EB2DA; --gold:#EDBE52; --land:#2A2622; --sea:#1A1817; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#161413; --panel:#211E1C; --fg:#EFEAE4; --muted:#A79F98; --rule:#37322E; --card:#1C1A18; --border:#4A433D;
+  --hot:#F0695C; --cool:#8EB2DA; --gold:#EDBE52; --land:#2A2622; --sea:#1A1817; color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:400 18px/1.62 var(--body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));overflow-x:hidden}
+.wrap{max-width:700px;margin:0 auto;padding-block:28px 64px}
+.wrap .bleed{width:min(1180px,calc(100vw - 32px));margin-left:calc((100% - min(1180px,100vw - 32px))/2);margin-right:0}
+a{color:inherit;text-decoration-color:var(--hot);text-underline-offset:3px}
+.kicker{font:500 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.kicker b{background:var(--hot);color:#fff;padding:5px 8px;font-weight:500}
+header.hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 24px;align-items:end;border-bottom:6px double var(--fg);padding-bottom:22px;margin-top:18px}
+h1{font:900 clamp(44px,11vw,92px)/.9 var(--display);letter-spacing:-.02em;margin:0;text-wrap:balance}
+h1 .a{color:var(--hot)}
+.mark{width:clamp(96px,19vw,160px);height:auto;display:block}
+.dek{grid-column:1/-1;font-size:21px;line-height:1.42;margin:8px 0 0;max-width:56ch}
+.byline{font:400 13px/1.4 var(--mono);color:var(--muted);margin-top:14px}
+h2{font:800 34px/1.04 var(--display);letter-spacing:-.01em;margin:54px 0 10px;text-wrap:balance}
+h2 .n{font:500 13px/1 var(--mono);color:var(--hot);display:block;letter-spacing:.1em;margin-bottom:10px}
+h3{font:600 20px/1.25 var(--display);margin:28px 0 6px}
+p{margin:0 0 16px}
+.lede::first-letter{font:900 72px/.8 var(--display);float:left;margin:6px 10px 0 0;color:var(--hot)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);margin:26px 0 8px}
+.stats div{background:var(--card);padding:14px 12px}
+.stats b{display:block;font:900 clamp(22px,4.4vw,32px)/1 var(--display);letter-spacing:-.01em}
+.stats b.h{color:var(--hot)} .stats b.c{color:var(--cool)} .stats b.g{color:var(--gold)}
+.stats span{font:400 12px/1.35 var(--mono);color:var(--muted);display:block;margin-top:6px}
+@media (max-width:600px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.figure{margin:26px 0 30px}
+.fig-h{font:600 19px/1.25 var(--display);margin:0 0 4px}
+.fig-sub{font:400 13px/1.45 var(--mono);color:var(--muted);margin:0 0 12px}
+.src{font:400 12px/1.45 var(--mono);color:var(--muted);margin-top:10px}
+.chart{width:100%;position:relative}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{font-family:var(--mono);fill:var(--fg)}
+.lab{font-size:12px}.lab.m{fill:var(--muted)}.lab.b{font-weight:500}.lab.s{font-size:11px}
+.tip{position:absolute;pointer-events:none;background:var(--fg);color:var(--bg);font:400 12px/1.45 var(--mono);padding:8px 10px;border-radius:3px;max-width:290px;z-index:1000;transform:translate(-50%,calc(-100% - 12px));display:none}
+.tip b{font-weight:500}
+.controls{display:flex;gap:8px;align-items:center;margin:0 0 10px;flex-wrap:wrap}
+.scrollrow{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;padding-bottom:2px;max-width:100%}
+.scrollrow .btn{flex:0 0 auto;white-space:nowrap}
+.ctl-l{font:500 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-right:2px;flex:0 0 auto;align-self:center}
+.btn{font:500 12px/1 var(--mono);background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:3px;padding:8px 10px;cursor:pointer;min-height:36px}
+.btn[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.btn:focus-visible,input:focus-visible,summary:focus-visible,select:focus-visible{outline:2px solid var(--hot);outline-offset:2px}
+.tabs .btn[aria-pressed="true"]{background:var(--hot);border-color:var(--hot);color:#fff}
+.searchbox{position:relative;flex:1 1 260px;min-width:0}
+input[type=search]{font:400 15px/1 var(--mono);background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:3px;padding:10px 11px;min-height:40px;width:100%}
+.suggest{position:absolute;left:0;right:0;top:100%;margin:2px 0 0;padding:0;list-style:none;background:var(--card);border:1px solid var(--border);z-index:1001;font:400 13px/1.3 var(--mono);display:none;max-height:340px;overflow:auto}
+.suggest li{padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--rule)}
+.suggest li span{color:var(--muted)}
+.suggest li[aria-selected="true"],.suggest li:hover{background:var(--panel)}
+.mapgrid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;align-items:start}
+@media (max-width:900px){.mapgrid{grid-template-columns:1fr}}
+.side{background:var(--card);border:1px solid var(--border);padding:12px 12px 10px;font:400 13px/1.45 var(--mono);max-height:640px;overflow:auto}
+@media (max-width:900px){.side{max-height:none}}
+.side h4{font:500 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:14px 0 8px}
+.side h4:first-child{margin-top:2px}
+.side .big{font:800 26px/1.1 var(--display);margin:2px 0 4px}
+.side .sub{color:var(--muted);font-size:12px;margin:0 0 8px}
+.side table{width:100%;border-collapse:collapse;margin:4px 0 6px}
+.side td{padding:4px 4px 4px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+.side td.num{text-align:right;white-space:nowrap}
+.ringbar{display:block;height:6px;background:var(--hot);border-radius:2px;margin-top:3px;opacity:.8}
+.go{cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px}
+.back{font:400 12px var(--mono);background:none;border:0;color:var(--muted);padding:0;cursor:pointer;text-decoration:underline;margin-bottom:6px}
+.sw{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px;vertical-align:-1px;border:1px solid rgba(0,0,0,.15)}
+.lmap{height:640px;border:1px solid var(--border);background:var(--sea);border-radius:2px}
+@media (max-width:600px){.lmap{height:min(64vh,480px)}}
+.leaflet-container{font:400 12px/1.4 var(--mono);background:var(--sea)}
+.lyrBtn{background:var(--card,var(--bg));color:var(--fg);border:1px solid var(--border);border-radius:3px;font:600 12px/1 var(--mono);padding:8px 10px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.lyrBtn[aria-expanded="true"]{background:var(--fg);color:var(--bg)}
+.lyrPanel{background:var(--card,var(--bg));color:var(--fg);border:1px solid var(--border);border-radius:3px;padding:10px 12px 8px;margin-top:6px;width:250px;box-shadow:0 2px 10px rgba(0,0,0,.15);font:400 12px/1.3 var(--mono);max-height:min(70vh,520px);overflow:auto}
+.lyrPanel[hidden]{display:none}
+.lyrPanel .row{margin:0 0 9px}
+.lyrPanel label{display:flex;gap:6px;align-items:center;cursor:pointer;font-weight:600}
+.lyrPanel input[type=range]{width:100%;accent-color:var(--fg)}
+.lyrPanel select{font:400 12px var(--mono);background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:2px;padding:2px 4px;width:100%;min-height:0}
+.lyrPanel .sub{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:11px;margin-top:3px}
+.lyrPanel .sub span{flex:0 0 58px}
+.lyrPanel .hd{font:500 10.5px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:10px 0 7px;border-top:1px solid var(--rule);padding-top:9px}
+.lyrPanel .reset{font:400 11px var(--mono);color:var(--muted);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline}
+.cityL{font:500 11px/1 var(--mono);color:var(--fg);white-space:nowrap;text-shadow:0 0 3px var(--bg),0 0 3px var(--bg),0 0 2px var(--bg);pointer-events:none}
+.cityL i{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--fg);margin-right:4px;vertical-align:1px}
+.cityL.s{font-size:10px;font-weight:400}
+.cntL{font:700 11px/1 var(--mono);color:var(--fg);white-space:nowrap;text-transform:uppercase;letter-spacing:.06em;opacity:.7;text-shadow:0 0 3px var(--bg),0 0 3px var(--bg);pointer-events:none;text-align:center}
+.ringL{font:500 10.5px/1 var(--mono);color:var(--fg);white-space:nowrap;text-shadow:0 0 3px var(--bg),0 0 3px var(--bg),0 0 2px var(--bg);pointer-events:none}
+.mapnote{background:color-mix(in srgb,var(--card) 92%,transparent);border:1px solid var(--border);border-radius:3px;padding:6px 9px;font:400 12px/1.35 var(--mono);max-width:min(300px,62vw);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.mapnote b{font-weight:600}
+.mapnote:empty{display:none}
+.leaflet-bar a,.leaflet-bar a:hover{background:var(--card);color:var(--fg);border-bottom-color:var(--border)}
+.leaflet-control-attribution{background:color-mix(in srgb,var(--card) 85%,transparent)!important;color:var(--muted)}
+.leaflet-control-attribution a{color:var(--fg)}
+.legend{display:flex;gap:6px 12px;flex-wrap:wrap;font:400 12px/1.3 var(--mono);color:var(--muted);margin-top:8px;align-items:center}
+.legend span{display:inline-flex;align-items:center}
+.legend button{font:400 12px/1.3 var(--mono);color:var(--fg);background:none;border:1px solid transparent;border-radius:3px;padding:3px 5px;cursor:pointer;display:inline-flex;align-items:center}
+.legend button[aria-pressed="false"]{opacity:.38;text-decoration:line-through}
+.legend i{display:inline-block;width:12px;height:12px;margin-right:6px;border-radius:50%;border:1px solid rgba(0,0,0,.15)}
+.legend i.sq{border-radius:2px}
+.pull{font:600 26px/1.25 var(--display);border-left:6px solid var(--hot);padding:4px 0 4px 18px;margin:30px 0}
+.note{background:var(--panel);border:1px solid var(--rule);padding:14px 16px;font-size:16px;margin:22px 0}
+.note h3{margin-top:0}
+table.tbl{width:100%;border-collapse:collapse;font:400 13px/1.4 var(--mono);margin:8px 0}
+table.tbl th{text-align:left;font-weight:500;color:var(--muted);border-bottom:2px solid var(--fg);padding:6px 6px 6px 0}
+table.tbl td{border-bottom:1px solid var(--rule);padding:6px 6px 6px 0;vertical-align:top}
+table.tbl td.num,table.tbl th.num{text-align:right}
+.tblwrap{overflow-x:auto}
+details{margin:14px 0}
+summary{font:500 13px/1.4 var(--mono);cursor:pointer;color:var(--fg);padding:8px 0}
+.cta{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
+.cta a{font:500 13px/1 var(--mono);text-decoration:none;border:1px solid var(--fg);padding:11px 14px;border-radius:3px}
+.cta a.p{background:var(--hot);border-color:var(--hot);color:#fff}
+footer{border-top:6px double var(--fg);margin-top:56px;padding-top:16px;font:400 13px/1.55 var(--mono);color:var(--muted)}
+footer p{margin:0 0 10px}
+.theme{position:fixed;right:12px;bottom:12px;z-index:1002}
+@media print{.theme,.controls{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="kicker"><b>Data study</b><span>Earth and people</span><span>World, Holocene to 2026</span></div>
+<header class="hero">
+  <h1>In the shadow of the <span class="a">volcano</span></h1>
+  <svg class="mark" viewBox="0 0 160 120" aria-hidden="true"><g id="heroMark"></g></svg>
+  <p class="dek">Naples sits between Vesuvius and Campi Flegrei. Yogyakarta looks up at Merapi, Mexico City at Popocatépetl, Taipei at the Tatun volcanoes. This is every volcano with signs of activity in the last 12,000 years, the number of people who live within 10, 30 and 100 km of each one, and when each last erupted.</p>
+</header>
+<div class="byline">Dr Tristan Hotham · Independent researcher · 2026 · Data: Smithsonian Institution Global Volcanism Program, Volcanoes of the World; NOAA NCEI; Bird (2003) plate boundaries; Natural Earth</div>
+
+<div class="stats">
+  <div><b class="h">{{glob.30.floor|m0}}+</b><span>people live within 30 km of a Holocene volcano, counting each person once (at least)</span></div>
+  <div><b>{{n30_1m|int}}</b><span>volcanoes with a million or more people within 30 km</span></div>
+  <div><b class="g">{{c.IDN.floor30|m0}}+</b><span>of them in Indonesia, the most of any country</span></div>
+  <div><b class="c">{{recent_n30_1m|int}}</b><span>volcanoes with a million people within 30 km that have erupted since 2000</span></div>
+</div>
+
+<p class="lede">The Smithsonian Institution's Global Volcanism Program keeps the world's reference list of volcanoes. Its Holocene list, the volcanoes with evidence of activity in roughly the last 12,000 years, holds {{n_volc|int}} of them, from Antarctica to the Arctic and from the middle of the Pacific to the middle of Africa. For each one it also gives the number of people living within 5, 10, 30 and 100 km. Put those numbers on a map and the Ring of Fire around the Pacific becomes a ring of towns and cities: Java, Luzon, Honshu, the highlands of Mexico and Central America, and, on the far side of the world, the Bay of Naples.</p>
+<p>Each circle on the map below is a volcano, sized by the number of people within 30 km (you can switch to 10 or 100 km) and coloured by when it last erupted. Click one to draw its 10, 30 and 100 km rings and see who lives inside them. Click a country for its totals, or search for a volcano or a country.</p>
+
+<h2><span class="n">01 · The map</span>Every Holocene volcano and its neighbours</h2>
+<div class="bleed" id="atlas">
+<div class="controls">
+  <div class="scrollrow tabs" id="ringTabs"><span class="ctl-l">Size by people within</span></div>
+</div>
+<div class="controls">
+  <div class="searchbox"><input type="search" id="q" placeholder="Search a volcano or a country" aria-label="Search a volcano or a country" autocomplete="off"><ul class="suggest" id="sug" role="listbox"></ul></div>
+</div>
+<div class="controls">
+  <div class="scrollrow" id="focusRow"><span class="ctl-l">Zoom to</span></div>
+</div>
+<div class="mapgrid">
+  <div><div id="map" class="lmap" role="application" aria-label="Map of Holocene volcanoes sized by nearby population"></div>
+    <div class="legend" id="legend"></div></div>
+  <div class="side" id="side" aria-live="polite"></div>
+</div>
+<p class="src">Volcanoes, last eruptions and eruption counts: Global Volcanism Program, Volcanoes of the World 5.3.5 (Smithsonian Institution). Populations within 5, 10, 30 and 100 km: the GVP's own figures, from its 5.1.7 list (a fixed snapshot, not current counts). Plate boundaries: Bird (2003), via Hugo Ahlenius, Nordpil (ODC-By). Countries and cities: Natural Earth. Base map tiles © Esri.</p>
+</div>
+
+<h2><span class="n">02 · How many people?</span>Somewhere between half a billion and a lot more</h2>
+<p>Adding up the GVP's figures for every volcano gives {{glob.10.sum|m}} people within 10 km, {{glob.30.sum|m}} within 30 km and {{glob.100.sum|bn}} within 100 km. The last number is far too big, because many people live near more than one volcano and are counted again for each. Naples is the classic case: Vesuvius and Campi Flegrei are {{ves_cf_km|int}} km apart, and most of the city lies within 30 km of both. West Java, with a dozen volcanoes in a cluster, is counted many times over.</p>
+<p>To count each person once, I kept only volcanoes whose circles do not overlap, choosing the most crowded first. Those circles hold different people, so their total is a firm lower bound. The true number lies between the two: at least {{glob.10.floor|m}} people within 10 km of a Holocene volcano (and at most {{glob.10.sum|m}}), at least {{glob.30.floor|m}} within 30 km (at most {{glob.30.sum|m}}), and at least {{glob.100.floor|m0}} within 100 km. Within 10 km the two bounds almost meet; at 100 km the lower bound is the useful one, and studies that count people on a population grid, such as Brown and others (2015), put the number within 100 km at roughly 800 million.</p>
+<div class="figure"><p class="fig-h">People living near a Holocene volcano</p><p class="fig-sub">Solid bar: people within each distance of at least one volcano, counting each person once (a lower bound, from volcanoes whose circles do not overlap). Pale bar: the simple sum over all {{n_pop|int}} volcanoes with population figures, which counts some people several times (an upper bound). Hover for numbers.</p><div class="chart" id="rangeChart"></div></div>
+<p>Most volcanoes are not crowded. {{glob.10.zero|int}} of the {{n_pop|int}} volcanoes with figures ({{n10_zero_pct|pc}}) have nobody at all within 10 km, and the median volcano has {{glob.30.median|int}} people within 30 km. The crowds are concentrated: the 20 most crowded volcanoes hold {{top20_share30|pc}} of the 30 km total, and {{n30_1m|int}} volcanoes have a million or more people within 30 km.</p>
+
+<h2><span class="n">03 · Countries</span>Indonesia first, then Mexico, Japan and the Philippines</h2>
+<p>Indonesia has {{c.IDN.n|int}} Holocene volcanoes and at least {{c.IDN.floor30|m}} people within 30 km of one, {{idn_share_floor30|pc}} of the world's lower-bound total; within 100 km, at least {{c.IDN.floor100|m0}}, much of the population of Java. Mexico follows with at least {{c.MEX.floor30|m}} within 30 km, then Japan ({{c.JPN.floor30|m}}), the Philippines ({{c.PHL.floor30|m}}) and Italy ({{c.ITA.floor30|m}}), where Naples and Rome both sit beside volcanoes. Taiwan has only {{c.TWN.n|int}} Holocene volcanoes, but one of them, the Tatun Volcanic Group, rises on the northern edge of Taipei.</p>
+<div class="figure"><p class="fig-h">Countries with most people near a volcano</p><p class="fig-sub">People within the chosen distance of the country's Holocene volcanoes: solid, each person counted once (lower bound); pale, the simple sum (upper bound). A volcano on a border counts for both countries, and circles can cross borders. Click a bar to see the country on the map.</p>
+<div class="controls"><div class="scrollrow tabs" id="ctTabs"><span class="ctl-l">Within</span></div></div><div class="chart" id="ctChart"></div></div>
+<p>Counting volcanoes gives a different list. The United States has the most, {{c.USA.n|int}}, mostly in Alaska and the Cascades, followed by Japan ({{c.JPN.n|int}}) and Indonesia ({{c.IDN.n|int}}), but few Americans live close to one: at least {{c.USA.floor30|m}} within 30 km. Russia, Chile and Iceland have many volcanoes and few neighbours. Central America is the opposite: El Salvador and Guatemala are small countries built around their volcanoes, with at least {{c.SLV.floor30|m}} and {{c.GTM.floor30|m}} people within 30 km.</p>
+
+<h2><span class="n">04 · The most crowded volcanoes</span>Taipei, Java, Naples and the Mexican highlands</h2>
+<p>By people within 30 km, the most crowded volcano in the list is the Tatun Volcanic Group above Taipei ({{top30.0.p30|m}}), then Michoacán-Guanajuato in Mexico ({{top30.1.p30|m}}), Tangkuban Parahu above Bandung ({{top30.2.p30|m}}), Penanggungan near Surabaya ({{top30.3.p30|m}}) and Merapi above Yogyakarta ({{top30.4.p30|m}}). Vesuvius has {{v.vesuvius.p30|m}} people within 30 km and Campi Flegrei {{v.flegrei.p30|m}}; within 10 km, Campi Flegrei has {{v.flegrei.p10|m}} people living on and around the caldera itself.</p>
+<div class="figure"><p class="fig-h">The 20 most crowded volcanoes</p><p class="fig-sub">People within the chosen distance, coloured by last eruption. Click a bar to see the volcano and its rings on the map.</p>
+<div class="controls"><div class="scrollrow tabs" id="topTabs"><span class="ctl-l">Within</span></div></div><div class="chart" id="topChart"></div><div class="legend" id="topLeg"></div></div>
+<p>The ranking depends on the distance. Within 10 km, the top places go to volcanic fields that underlie whole cities: Michoacán-Guanajuato ({{top10.0.p10|m}}), the Tatun group ({{top10.1.p10|m}}), Campi Flegrei ({{top10.2.p10|m}}) and Ilopango beside San Salvador ({{top10.3.p10|m}}). Within 100 km, Java takes over: Gede-Pangrango and Salak, both within sight of Jakarta, each have more than {{top100.1.p100|m0}} people within 100 km, and Hakone and Mount Fuji bring in Tokyo and Yokohama. A note of care: for {{n_flat|int}} volcanoes, most of them large volcanic fields, the GVP gives the same figure at 10 and 30 km (Michoacán-Guanajuato has {{top10.0.p10|m}} at every distance), which suggests the count covers the whole field rather than circles round one point.</p>
+<p class="pull">At least {{glob.10.floor|m}} people live within 10 km of a volcano that has erupted in the last 12,000 years.</p>
+
+<h2><span class="n">05 · Recent and near</span>Volcanoes that are both busy and crowded</h2>
+<p>A volcano that last erupted 5,000 years ago is not the same threat as one that erupted last year. {{by_ecls.0.n|int}} volcanoes have erupted since 2000, and {{recent_n30_1m|int}} of them have a million or more people within 30 km. Top of that list is Tangkuban Parahu, which last erupted in {{recent.0.last|yr}} with {{recent.0.p30|m}} people within 30 km, then Merapi ({{recent.1.p30|m}}), Slamet ({{recent.2.p30|m}}), Pacaya near Guatemala City ({{recent.3.p30|m}}) and Taal, south of Manila ({{recent.4.p30|m}}). In all, at least {{since1900.floor30|m}} people live within 30 km of a volcano that has erupted since 1900.</p>
+<div class="figure"><p class="fig-h">Crowded volcanoes that have erupted since 2000</p><p class="fig-sub">The 20 volcanoes with an eruption in 2000 or later with most people within 30 km. Click a bar to see the volcano on the map.</p><div class="chart" id="recentChart"></div></div>
+<div class="figure"><p class="fig-h">People within 30 km, by when the volcano last erupted</p><p class="fig-sub">Solid: each person counted once within each group (lower bound); pale: simple sum. Volcanoes with no dated eruption have Holocene evidence such as fresh lava flows but no eruption the GVP can date.</p><div class="chart" id="eclsChart"></div></div>
+<p>The eruption list runs to {{latest_year|yr}}. Eruptions that began in {{latest2.y0|yr}} or {{latest2.y1|yr}} came from {{latest2.n_volc|int}} volcanoes with {{latest2.sum30|m}} people within 30 km between them, led by Mayon in the Philippines ({{latest2.top.0.p30|m}}) and Poás in Costa Rica ({{latest2.top.1.p30|m}}). And {{by_ecls.5.n|int}} volcanoes have no dated eruption at all: they are on the list because of young lava flows or other Holocene evidence, not because anyone saw them erupt.</p>
+
+<h2><span class="n">06 · Eruptions through time</span>More eruptions, or more people watching?</h2>
+<p>The GVP's eruption list holds {{n_erupt|int}} confirmed eruptions since the start of the Holocene. Counted by century, they climb steeply: {{cc.1600.n|int}} in the 1600s, {{cc.1700.n|int}} in the 1700s, {{cc.1800.n|int}} in the 1800s and {{cc.1900.n|int}} in the 1900s. In the {{cc.2000.years|int}} years from 2000 to {{latest_year|yr}} there have already been {{cc.2000.n|int}}, about {{rate_2000|int}} a year against {{rate_1900|int}} a year in the twentieth century.</p>
+<div class="figure"><p class="fig-h">Confirmed eruptions per century, 1 CE to {{latest_year|yr}}</p><p class="fig-sub">Eruptions by century of start. Top: all confirmed eruptions, including those of unknown size. Bottom: eruptions of VEI 4 or more (large explosive eruptions, the size of Eyjafjallajökull in 2010 or bigger), on their own scale. The last bar covers only 2000 to {{latest_year|yr}}. Hover for numbers.</p><div class="chart" id="centChart"></div></div>
+<p>This is a record of watching, not of the Earth speeding up. Small eruptions on remote volcanoes go unrecorded unless someone is there to see them or a satellite to detect them, and {{obs_share|pc}} of all eruptions in the list are dated by reported observation. Large eruptions leave deposits that geologists can find and date long afterwards, so their record is more complete. The comparison shows it: from the 1600s to the 1900s the number of recorded eruptions rose {{ratio_all_1900_1600|f1}} times, but the number of eruptions of VEI 4 or more only {{ratio_vei4_1900_1600|f1}} times, and even that rise is likely to be mostly better reporting. {{n_volc_first_after1800|int}} volcanoes have no eruption in the list before 1800.</p>
+
+<h2><span class="n">07 · The deadliest</span>When volcanoes and people met</h2>
+<p>Volcano deaths are rare but concentrated. NOAA's Significant Volcanic Eruptions Database lists {{ncei.n|int}} eruptions with deaths recorded, from 141 BCE to {{ncei.y1|yr}}, with {{ncei.deaths|int}} deaths between them. The deadliest are Tambora in 1815 ({{ncei.top.0.deaths|int}} deaths in this database, mostly from the famine that followed), Krakatau in 1883 ({{ncei.top.1.deaths|int}}, mostly from tsunamis), Ilopango in El Salvador in about 450 CE ({{ncei.top.2.deaths|int}}, the date and toll NOAA gives), Mont Pelée in 1902, which destroyed the town of Saint-Pierre on Martinique ({{ncei.top.3.deaths|int}}), and Nevado del Ruiz in 1985, whose mudflows buried the town of Armero ({{ncei.top.4.deaths|int}}).</p>
+<div class="figure"><p class="fig-h">The deadliest eruptions in the NOAA database</p><p class="fig-sub">Deaths as recorded by NOAA NCEI; figures for older eruptions are rough estimates.</p><div class="tblwrap"><table class="tbl" id="deadTab"></table></div></div>
+
+<h2><span class="n">08 · How I did this</span>Methods and caveats</h2>
+<p><b>Volcanoes and eruptions.</b> The volcano list is the GVP's Holocene list from Volcanoes of the World 5.3.5 ({{n_volc|int}} volcanoes), and the eruption list is its list of confirmed Holocene eruptions from the same version ({{n_erupt|int}} eruptions). Both were downloaded from the GVP in 2026; I used copies posted to public GitHub repositories, whose headers give the version and download date. A volcano's last eruption is the GVP's "last known eruption": for a long eruption that is when it ended, or the present year if it is still going on.</p>
+<p><b>Populations.</b> Current downloads of the GVP list no longer include population, so the populations within 5, 10, 30 and 100 km come from a copy of the list from version 5.1.7 that still has them, matched by volcano number. {{meta.n_nopop|int}} volcanoes added since then have no figures. The same population figures appear unchanged in a GVP export from 2020, so they are a fixed snapshot of a gridded population estimate, not a census, and they predate a decade of growth in many of these places. The export does not say which population grid or year they come from. For {{n_flat|int}} volcanoes, most of them large volcanic fields, the figure is the same at 10 and 30 km, and I flag those.</p>
+<p><b>Counting each person once.</b> Summing the figures over volcanoes counts some people several times. For a lower bound I sort volcanoes by population and keep each one whose circle does not overlap a circle already kept; the people inside non-overlapping circles are all different people, so their sum cannot be too high. It can be too low, because it leaves out everyone who lives only near a volcano that was skipped. The truth is between the bounds. Countries use the same method on their own volcanoes; a volcano on a border, such as those between Chile and Argentina, counts for both, and its circles take in people on both sides.</p>
+<p><b>What this is not.</b> Living within 30 km of a volcano is not the same as being at risk: hazards depend on the volcano, the type of eruption, wind, valleys, rivers and warning systems, and the GVP's list includes volcanoes that may never erupt again. These are distances, not hazard zones.</p>
+<details><summary>Sources and licences</summary>
+<ul>
+<li>Global Volcanism Program, 2025. Volcanoes of the World (v. 5.3.5). Distributed by Smithsonian Institution, compiled by Venzke, E. <a href="https://volcano.si.edu/">https://volcano.si.edu/</a> (accessed via the named GitHub mirrors). Volcano list downloaded in 2026 (mirror: github.com/bciupak/Wizualizacja-Danych-Projekty) and eruption list downloaded in 2026 (mirror: github.com/im-hana-s/ML-mini-project).</li>
+<li>Global Volcanism Program, 2024. Volcanoes of the World (v. 5.1.7). Distributed by Smithsonian Institution, compiled by Venzke, E. <a href="https://volcano.si.edu/">https://volcano.si.edu/</a> (accessed via the named GitHub mirrors). Population columns (mirror: github.com/Matteo2979/Volcano-Analysis).</li>
+<li>GVP data are used under the Smithsonian's terms of use (<a href="https://volcano.si.edu/gvp_termsofuse.cfm">volcano.si.edu/gvp_termsofuse.cfm</a>): free for non-commercial use with credit; there is no open licence. The derived tables in this study's data folder keep those terms. This study is not endorsed by the Smithsonian Institution.</li>
+<li>National Geophysical Data Center / World Data Service (NGDC/WDS): NCEI/WDS Global Significant Volcanic Eruptions Database. NOAA National Centers for Environmental Information. doi:10.7289/V5JW8BSH. US Government work, public domain. Eruptions with deaths recorded, copy of 2024.</li>
+<li>Bird, P. (2003) An updated digital model of plate boundaries. Geochemistry, Geophysics, Geosystems 4(3), 1027. GeoJSON by Hugo Ahlenius, Nordpil (github.com/fraxen/tectonicplates), Open Data Commons Attribution License 1.0.</li>
+<li>Brown, S.K., Auker, M.R. and Sparks, R.S.J. (2015) Populations around Holocene volcanoes and development of a Population Exposure Index. In Loughlin, S.C., Sparks, R.S.J., Brown, S.K., Jenkins, S.F. and Vye-Brown, C. (eds) Global Volcanic Hazards and Risk. Cambridge: Cambridge University Press, 223 to 232.</li>
+<li>Natural Earth countries and populated places (public domain). Base map tiles © Esri.</li>
+</ul></details>
+
+<div class="cta"><a class="p" href="https://doi.org/10.5281/zenodo.23847550">Read the paper</a><a href="https://github.com/Tristan-Hotham/volcano-neighbours">Data and code</a><a href="https://blog.tristanhotham.com/2026/10/31/volcano-neighbours/">Blog post</a><a href="https://blog.tristanhotham.com/">Blog home</a></div>
+
+<footer>
+<p>Dr Tristan Hotham, Independent researcher. ORCID <a href="https://orcid.org/0000-0003-4931-9349">0000-0003-4931-9349</a>.</p>
+<p>Cite as: Hotham, T. (2026) In the shadow of the volcano: how many people live near the world's Holocene volcanoes, from the Smithsonian's Volcanoes of the World. Zenodo. <a href="https://doi.org/10.5281/zenodo.23847550">https://doi.org/10.5281/zenodo.23847550</a></p>
+<p>Licence: text and figures CC BY 4.0, code MIT. Tables derived from the Global Volcanism Program database follow the Smithsonian's terms of use (non-commercial use, with credit).</p>
+<p>I wrote the text, with drafting and editing assistance from Claude (Anthropic), which also helped prepare the analysis code. I reviewed and checked all text and results.</p>
+</footer>
+</div>
+<div class="tip" id="tip"></div>
+<button class="btn theme" id="theme" aria-label="Toggle dark mode">◐</button>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const R = /*RESULTS*/;
+const VOLS = /*VOLCANOES*/;
+const WORLD = /*WORLD*/;
+const CITIES = /*CITIES*/;
+const PLATES = /*PLATES*/;
+const CTRY = /*COUNTRIES*/;
+const fmt = n => n == null || n === "" ? "n/a" : Math.round(n).toLocaleString("en-GB");
+const mfmt = n => n == null ? "n/a" : n >= 1e9 ? (n / 1e9).toFixed(2) + " billion" : n >= 1e6 ? (n / 1e6).toFixed(1) + " million" : n >= 1e4 ? fmt(Math.round(n / 1000) * 1000) : fmt(n);
+const mshort = n => (n >= 1e9 ? (n / 1e9).toFixed(2) + "bn" : n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1) + "m" : n >= 1e3 ? Math.round(n / 1e3) + "k" : fmt(n)).replace(".0m", "m");
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const tip = document.getElementById("tip");
+function showTip(h, x, y) { tip.innerHTML = h; tip.style.display = "block"; const w = tip.offsetWidth; x = Math.max(w / 2 + 8, Math.min(innerWidth - w / 2 - 8, x)); tip.style.left = x + scrollX + "px"; tip.style.top = y + scrollY + "px"; }
+function hideTip() { tip.style.display = "none"; }
+document.addEventListener("click", hideTip);
+const NS = "http://www.w3.org/2000/svg";
+const el = (t, a, p) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; };
+const lbl = (svg, x, y, s, cls = "lab", anchor = "start") => { const t = el("text", { x, y, class: cls, "text-anchor": anchor }, svg); t.textContent = s; return t; };
+const redraws = [];
+function resp(box, render) { let last = 0; const go = force => { const w = Math.max(280, Math.round(box.clientWidth)); if (!force && Math.abs(w - last) < 4) return; last = w; box.innerHTML = ""; render(w, w < 560); }; new ResizeObserver(() => go()).observe(box); go(); redraws.push(() => go(true)); }
+const isDark = () => { const r = document.documentElement; return r.dataset.theme ? r.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; };
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const small = () => innerWidth < 900;
+const tip2 = (e, h) => showTip(h, e.clientX, e.clientY);
+
+/* volcanoes: [vnum, name, alias, country, lat, lon, elev, type, last_txt, last, class, p5, p10, p30, p100, n_erupt, max_vei, isos, tectonic, rock, [deadliest year, deaths, all deaths] | null, continuing] */
+const ECL = R.by_ecls.map(b => [b.k, b.label, b.col]);
+const VS = VOLS.map(v => ({ id: v[0], n: v[1], al: v[2], c: v[3], lat: v[4], lon: v[5], elev: v[6], type: v[7], lt: v[8], last: v[9], k: v[10], p: { 5: v[11], 10: v[12], 30: v[13], 100: v[14] }, ne: v[15], vei: v[16], isos: v[17].split("|").filter(Boolean), tect: v[18], rock: v[19], dead: v[20], cont: v[21] }));
+const BYID = {}; VS.forEach(v => BYID[v.id] = v);
+const byName = n => VS.find(v => v.n === n);
+const CT = {}; CTRY.forEach(c => CT[c[0]] = { iso: c[0], name: c[1], n: c[2], n1900: c[3], n2000: c[4], ne: c[5], f10: c[6], s10: c[7], f30: c[8], s30: c[9], f100: c[10], s100: c[11], top: c[12] });
+const label = v => v.al ? `${v.n} (${v.al})` : v.n;
+const S = { ring: 30, sel: null, ciso: null, hide: new Set() };
+
+/* hero mark: a volcano with its 10, 30 and 100 km rings */
+(function () {
+  const g = document.getElementById("heroMark");
+  [[100, .18], [30, .35], [10, .6]].forEach(([r, o], i) => { const rr = [74, 46, 24][i]; el("ellipse", { cx: 80, cy: 104, rx: rr, ry: rr * .22, fill: "none", stroke: "#B3261E", "stroke-width": 2.2, opacity: o + .25, "stroke-dasharray": i === 0 ? "4 4" : "" }, g); });
+  el("path", { d: "M44 104 L72 40 Q80 32 88 40 L116 104 Z", fill: "currentColor" }, g);
+  el("path", { d: "M72 40 Q80 32 88 40 L84 52 L80 46 L76 54 Z", fill: "#B3261E" }, g);
+  el("path", { d: "M80 30 Q70 18 78 8 M84 30 Q96 20 90 6", fill: "none", stroke: "currentColor", "stroke-width": 2.4, "stroke-linecap": "round", opacity: .55 }, g);
+})();
+
+/* ---------- map machinery ---------- */
+const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/";
+const ESRI_ATT = 'Tiles &copy; Esri, HERE, Garmin, USGS, NGA, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, and the GIS user community';
+const LYDEF = { base: "plain", hills: true, hillK: 55, labels: false, labelK: 80, names: true, nameLvl: 1, cnames: true, borders: true, colour: 90, plates: true, rings: true, unk: true };
+const LY = { ...LYDEF };
+try { Object.assign(LY, JSON.parse(localStorage.getItem("volcano_layers") || "{}")); } catch (e) {}
+const saveLY = () => { try { localStorage.setItem("volcano_layers", JSON.stringify(LY)); } catch (e) {} };
+const HOME = () => small() ? [[-45, -125], [62, 150]] : [[-48, -135], [66, 160]];
+const map = L.map("map", { minZoom: 1, maxZoom: 13, maxBounds: [[-80, -230], [86, 230]], zoomSnap: .5, worldCopyJump: false });
+map.fitBounds(HOME());
+["hills:250", "fill:400", "plates:420", "labels:450", "rings:560", "pts:600", "names:620"].forEach(s => { const [n, z] = s.split(":"); map.createPane(n); map.getPane(n).style.zIndex = z; });
+["hills", "labels", "names", "plates"].forEach(n => map.getPane(n).style.pointerEvents = "none");
+const canvas = L.canvas({ pane: "pts", padding: .3, tolerance: 4 });
+let base = null, hills = null, labels = null; const names = L.layerGroup(), cnames = L.layerGroup();
+function setTiles() {
+  [base, labels, hills].forEach(l => { if (l) map.removeLayer(l); });
+  const t = isDark() ? "Dark" : "Light";
+  const url = LY.base === "relief" ? ESRI + "World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}" : LY.base === "satellite" ? ESRI + "World_Imagery/MapServer/tile/{z}/{y}/{x}" : LY.base === "topo" ? ESRI + "World_Topo_Map/MapServer/tile/{z}/{y}/{x}" : `${ESRI}Canvas/World_${t}_Gray_Base/MapServer/tile/{z}/{y}/{x}`;
+  base = L.tileLayer(url, { maxZoom: 16, maxNativeZoom: LY.base === "relief" ? 13 : 16, attribution: ESRI_ATT }).addTo(map);
+  hills = L.tileLayer(ESRI + "Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}", { maxZoom: 16, maxNativeZoom: 16, pane: "hills" });
+  labels = L.tileLayer(`${ESRI}Canvas/World_${t}_Gray_Reference/MapServer/tile/{z}/{y}/{x}`, { maxZoom: 16, pane: "labels" });
+  applyLayers();
+}
+function applyLayers() {
+  if (!base) return;
+  if (LY.hills) { hills.addTo(map); hills.setOpacity(Math.min(1, .15 + LY.hillK / 120)); } else map.removeLayer(hills);
+  if (LY.labels) { labels.addTo(map); labels.setOpacity(LY.labelK / 100); } else map.removeLayer(labels);
+  if (LY.names) names.addTo(map); else map.removeLayer(names);
+  if (LY.cnames) cnames.addTo(map); else map.removeLayer(cnames);
+  if (LY.plates) plateLayer.addTo(map); else map.removeLayer(plateLayer);
+  restyle(); placeNames(); drawRings();
+}
+function placeNames() {
+  names.clearLayers(); cnames.clearLayers();
+  const z = map.getZoom(), bb = map.getBounds().pad(.05); const boxes = [];
+  if (LY.names) {
+    const minPop = [[3, 1e7], [4, 4e6], [5, 1.5e6], [6, 6e5], [7, 3e5], [99, 2e5]].find(([zz]) => z < zz + (LY.nameLvl === 2 ? 1.5 : LY.nameLvl === 0 ? -1 : 0))[1] * (LY.nameLvl === 0 ? 2 : 1);
+    let n = 0;
+    for (const c of CITIES) {
+      if (c.pop < minPop || !bb.contains([c.lat, c.lon])) continue;
+      const pt = map.latLngToContainerPoint([c.lat, c.lon]), big = c.pop >= 5e6;
+      const bx = [pt.x - 4, pt.y - 8, pt.x + 10 + c.name.length * (big ? 6.9 : 6.3), pt.y + 7];
+      if (boxes.some(o => bx[0] < o[2] && bx[2] > o[0] && bx[1] < o[3] && bx[3] > o[1])) continue;
+      boxes.push(bx); L.marker([c.lat, c.lon], { pane: "names", interactive: false, keyboard: false, icon: L.divIcon({ className: "cityL" + (big ? "" : " s"), html: `<i></i>${esc(c.name)}`, iconSize: null, iconAnchor: [3, 6] }) }).addTo(names);
+      if (++n >= 110) break;
+    }
+  }
+  if (LY.cnames && z >= 3 && z < 8) {
+    WORLD.features.forEach(f => { const c = CPOS[f.properties.iso]; if (!c || !bb.contains(c)) return; const nm = f.properties.n;
+      if (z < 4.5 && AREA[f.properties.iso] < 60) return; const pt = map.latLngToContainerPoint(c), w = nm.length * 7.2;
+      const bx = [pt.x - w / 2, pt.y - 7, pt.x + w / 2, pt.y + 7]; if (boxes.some(o => bx[0] < o[2] && bx[2] > o[0] && bx[1] < o[3] && bx[3] > o[1])) return; boxes.push(bx);
+      L.marker(c, { pane: "names", interactive: false, keyboard: false, icon: L.divIcon({ className: "cntL", html: esc(nm), iconSize: [w, 14], iconAnchor: [w / 2, 7] }) }).addTo(cnames); });
+  }
+}
+(function layerControl() {
+  const Ctl = L.Control.extend({ options: { position: "topright" }, onAdd() {
+    const d = L.DomUtil.create("div"); L.DomEvent.disableClickPropagation(d); L.DomEvent.disableScrollPropagation(d);
+    d.innerHTML = `<button class="lyrBtn" aria-expanded="false">Map layers</button>
+<div class="lyrPanel" hidden>
+ <div class="row"><label style="font-weight:600">Base map</label><div class="sub"><select data-k="base" aria-label="Base map"><option value="plain">Plain grey</option><option value="relief">Shaded relief</option><option value="topo">Topographic</option><option value="satellite">Satellite</option></select></div></div>
+ <div class="row"><label><input type="checkbox" data-k="hills"> Hill shading</label><div class="sub"><span>strength</span><input type="range" data-k="hillK" min="10" max="100" step="5" aria-label="Hill shading strength"></div></div>
+ <div class="row"><label><input type="checkbox" data-k="labels"> Map labels</label><div class="sub"><span>strength</span><input type="range" data-k="labelK" min="20" max="100" step="5" aria-label="Map label strength"></div></div>
+ <div class="row"><label><input type="checkbox" data-k="names"> Bold city names</label><div class="sub"><span>how many</span><select data-k="nameLvl" aria-label="How many city names"><option value="0">Biggest only</option><option value="1">Some</option><option value="2">Lots</option></select></div></div>
+ <div class="row"><label><input type="checkbox" data-k="cnames"> Country names</label></div>
+ <div class="row"><label><input type="checkbox" data-k="borders"> Borders</label></div>
+ <div class="row"><label style="font-weight:600">Colour</label><div class="sub"><span>strength</span><input type="range" data-k="colour" min="20" max="100" step="5" aria-label="Colour strength"></div></div>
+ <div class="hd">Volcanoes</div>
+ <div class="row"><label><input type="checkbox" data-k="plates"> Plate boundaries (Ring of Fire)</label></div>
+ <div class="row"><label><input type="checkbox" data-k="rings"> 10, 30 and 100 km rings on click</label></div>
+ <div class="row"><label><input type="checkbox" data-k="unk"> Volcanoes with no dated eruption</label></div>
+ <button class="reset">Reset layers</button>
+</div>`;
+    return d; } });
+  map.addControl(new Ctl());
+  const box = map.getContainer(), btn = box.querySelector(".lyrBtn"), pan = box.querySelector(".lyrPanel");
+  btn.onclick = () => { const o = pan.hidden; pan.hidden = !o; btn.setAttribute("aria-expanded", o); };
+  const sync = () => pan.querySelectorAll("[data-k]").forEach(i => { const k = i.dataset.k; if (i.type === "checkbox") i.checked = LY[k]; else i.value = LY[k]; });
+  pan.querySelectorAll("[data-k]").forEach(i => i.addEventListener(i.type === "range" ? "input" : "change", () => {
+    const k = i.dataset.k; LY[k] = i.type === "checkbox" ? i.checked : (k === "base" ? i.value : +i.value);
+    if (k === "hillK") LY.hills = true; if (k === "labelK") LY.labels = true; if (k === "nameLvl") LY.names = true;
+    sync(); saveLY(); if (k === "base") setTiles(); else { applyLayers(); legend(); }
+  }));
+  pan.querySelector(".reset").onclick = () => { Object.assign(LY, LYDEF); saveLY(); sync(); setTiles(); legend(); };
+  sync();
+})();
+const Note = L.Control.extend({ options: { position: "bottomleft" }, onAdd() { const d = L.DomUtil.create("div", "mapnote"); d.id = "mapnote"; L.DomEvent.disableClickPropagation(d); return d; } });
+map.addControl(new Note());
+L.control.scale({ imperial: false, position: "bottomright" }).addTo(map);
+const plateLayer = L.layerGroup(PLATES.map(l => L.polyline(l, { pane: "plates", color: "#B3261E", weight: 1.4, opacity: .5, dashArray: "5 4", interactive: false })));
+
+/* ---------- countries ---------- */
+const CPOS = {}, AREA = {};
+WORLD.features.forEach(f => { const b = L.geoJSON(f).getBounds(); CPOS[f.properties.iso] = b.getCenter(); AREA[f.properties.iso] = (b.getNorth() - b.getSouth()) * (b.getEast() - b.getWest()); });
+Object.assign(CPOS, { USA: L.latLng(39.5, -98), RUS: L.latLng(61, 95), IDN: L.latLng(-2, 115), CAN: L.latLng(57, -100), FRA: L.latLng(46.6, 2.4), CHL: L.latLng(-30, -71), NOR: L.latLng(61.5, 9), JPN: L.latLng(36.5, 138.5), NZL: L.latLng(-41.5, 173), PHL: L.latLng(12.5, 122.5), MEX: L.latLng(23.5, -102) });
+function cStyle(f) {
+  const iso = f.properties.iso, sel = iso === S.ciso, has = !!CT[iso];
+  return { color: sel ? css("--fg") : (css("--border") || "#999"), weight: LY.borders ? (sel ? 2.2 : .6) : (sel ? 2 : 0), fillColor: sel ? css("--gold") : css("--land"), fillOpacity: sel ? .18 : (has ? .12 : .05) };
+}
+const cLayer = L.geoJSON(WORLD, { pane: "fill", style: cStyle, onEachFeature: (f, l) => {
+  l.on("click", () => pickCountry(f.properties.iso, false));
+} }).addTo(map);
+
+/* ---------- volcano dots ---------- */
+const ptLayer = L.layerGroup().addTo(map), ringLayer = L.layerGroup().addTo(map);
+const ecol = k => ECL[k][2];
+const RMAX = { 5: 5.8e6, 10: 5.8e6, 30: 6.8e6, 100: 4.1e7 };
+const radius = (v, z) => { const p = v.p[S.ring]; const k = Math.max(.75, Math.min(1.45, .8 + (z - 2) * .22)); return p == null ? 2.2 * k : Math.max(2.2, 17 * Math.sqrt(p / RMAX[S.ring])) * k; };
+function vTip(v) { const p = v.p[S.ring]; return `<b>${esc(label(v))}</b><br>${esc(v.c)} · last eruption ${esc(v.lt)}<br>${p == null ? "no population figure" : fmt(p) + " people within " + S.ring + " km"}`; }
+function visible(v) { return !S.hide.has(v.k) && (LY.unk || v.k !== 5); }
+function drawPts() {
+  ptLayer.clearLayers();
+  const z = map.getZoom(), stroke = isDark() ? "#111" : "#fff", a = LY.colour / 100;
+  const list = VS.filter(visible).sort((x, y) => (y.p[S.ring] ?? -1) - (x.p[S.ring] ?? -1));
+  for (const v of list) {
+    const m = L.circleMarker([v.lat, v.lon], { renderer: canvas, radius: radius(v, z), weight: .9, color: stroke, fillColor: ecol(v.k), fillOpacity: .82 * a, opacity: .9 });
+    m.on("click", e => { L.DomEvent.stopPropagation(e); pickVolcano(v, false); });
+    m.on("mouseover", e => { const r = map.getContainer().getBoundingClientRect(); showTip(vTip(v), r.left + e.containerPoint.x, r.top + e.containerPoint.y); }).on("mouseout", hideTip);
+    m.addTo(ptLayer);
+  }
+  if (S.sel) L.circleMarker([S.sel.lat, S.sel.lon], { renderer: canvas, radius: radius(S.sel, z) + 5, weight: 2.4, color: css("--fg"), fill: false, interactive: false }).addTo(ptLayer);
+}
+function drawRings() {
+  ringLayer.clearLayers();
+  if (!S.sel || !LY.rings) return;
+  const v = S.sel, fg = css("--fg");
+  [[100, "6 5", 1.4], [30, "", 1.8], [10, "", 2.4]].forEach(([km, dash, w]) => {
+    L.circle([v.lat, v.lon], { pane: "rings", radius: km * 1000, color: km === 10 ? "#B3261E" : fg, weight: w, dashArray: dash, fill: km === 10, fillColor: "#B3261E", fillOpacity: .06, interactive: false }).addTo(ringLayer);
+    const lat = v.lat + km / 111.2, p = v.p[km];
+    L.marker([lat, v.lon], { pane: "rings", interactive: false, keyboard: false, icon: L.divIcon({ className: "ringL", html: `${km} km${p != null ? ": " + mshort(p) : ""}`, iconSize: null, iconAnchor: [0, 14] }) }).addTo(ringLayer);
+  });
+}
+function restyle() { cLayer.setStyle(cStyle); drawPts(); }
+map.on("zoomend moveend", () => { placeNames(); drawPts(); });
+map.on("click", () => { if (S.sel || S.ciso) { S.sel = null; S.ciso = null; drawRings(); restyle(); side(); note(""); } });
+
+/* ---------- legend, side panel ---------- */
+function legend() {
+  const e = document.getElementById("legend");
+  const sizes = S.ring === 100 ? [1e6, 1e7, 3e7] : [1e5, 1e6, 5e6];
+  e.innerHTML = `<span class="ctl-l">Last eruption</span>` + ECL.map((c, i) => `<button data-k="${i}" aria-pressed="${!S.hide.has(i) && (i !== 5 || LY.unk)}" title="Show or hide"><i style="background:${c[2]}"></i>${esc(c[1])}</button>`).join("") +
+    `<span style="margin-left:8px">Circle area: people within ${S.ring} km</span>` + sizes.map(p => { const r = Math.max(2.2, 17 * Math.sqrt(p / RMAX[S.ring])); return `<span><i style="width:${2 * r}px;height:${2 * r}px;background:transparent;border:1.5px solid var(--muted)"></i>${mshort(p)}</span>`; }).join("");
+  e.querySelectorAll("button").forEach(b => b.onclick = () => { const k = +b.dataset.k; if (k === 5 && !LY.unk) { LY.unk = true; saveLY(); } else if (S.hide.has(k)) S.hide.delete(k); else S.hide.add(k); legend(); drawPts(); });
+}
+function note(h) { document.getElementById("mapnote").innerHTML = h || ""; }
+function ringTable(v) {
+  const mx = Math.max(1, v.p[100] || 0);
+  return `<table>` + [5, 10, 30, 100].map(k => `<tr><td>Within ${k} km<span class="ringbar" style="width:${v.p[k] == null ? 0 : Math.max(1, 100 * Math.sqrt(v.p[k] / mx))}%"></span></td><td class="num">${v.p[k] == null ? "n/a" : fmt(v.p[k])}</td></tr>`).join("") + `</table>`;
+}
+function side() {
+  const box = document.getElementById("side"); let h = "";
+  if (S.sel) {
+    const v = S.sel, flat = v.p[10] != null && v.p[10] === v.p[30] && v.p[30] > 1e4;
+    h = `<button class="back">Back</button><h4>Volcano</h4><div class="big">${esc(v.n)}</div>${v.al ? `<p class="sub">${esc(v.al)}</p>` : ""}<p class="sub">${v.isos.map(i => `<span class="go" data-c="${i}">${esc((CT[i] || { name: i }).name)}</span>`).join(", ") || esc(v.c)}</p>
+<table><tr><td>Type</td><td class="num">${esc(v.type || "n/a")}</td></tr><tr><td>Elevation</td><td class="num">${v.elev == null ? "n/a" : fmt(v.elev) + " m"}</td></tr><tr><td>Last eruption</td><td class="num"><span class="sw" style="background:${ecol(v.k)}"></span>${esc(v.lt)}${v.cont ? " (continuing)" : ""}</td></tr><tr><td>Eruptions in the list</td><td class="num">${v.ne}</td></tr>${v.vei != null ? `<tr><td>Largest VEI</td><td class="num">${v.vei}</td></tr>` : ""}</table>
+<h4>People living nearby</h4>${v.p[30] == null ? `<p class="sub">No population figures: this volcano was added to the list after the population columns were dropped.</p>` : ringTable(v)}${flat ? `<p class="sub">The GVP gives the same figure at 10 and 30 km for this large volcanic field, so it probably counts the whole field.</p>` : ""}
+${v.dead ? `<h4>Deadliest eruption (NOAA)</h4><p>${v.dead[0] < 0 ? -v.dead[0] + " BCE" : v.dead[0]}: ${fmt(v.dead[1])} deaths${v.dead[2] > v.dead[1] ? `; ${fmt(v.dead[2])} in all recorded eruptions` : ""}.</p>` : ""}
+<p class="sub">${esc(v.tect)}${v.rock ? " · " + esc(v.rock) : ""}</p><p class="sub"><a href="https://volcano.si.edu/volcano.cfm?vn=${v.id}" target="_blank" rel="noopener">GVP page for ${esc(v.n)}</a></p>`;
+    note(`<b>${esc(v.n)}</b>: ${v.p[30] == null ? "no population figures" : fmt(v.p[30]) + " people within 30 km"}; last eruption ${esc(v.lt)}`);
+  } else if (S.ciso) {
+    const c = CT[S.ciso], nm = c ? c.name : (WORLD.features.find(f => f.properties.iso === S.ciso) || { properties: { n: S.ciso } }).properties.n;
+    h = `<button class="back">Back</button><h4>Country</h4><div class="big">${esc(nm)}</div>`;
+    if (!c) h += `<p class="sub">No Holocene volcanoes in the GVP list.</p>`;
+    else { const vs = VS.filter(v => v.isos.includes(S.ciso)).sort((a, b) => (b.p[30] ?? -1) - (a.p[30] ?? -1));
+      h += `<table><tr><td>Holocene volcanoes</td><td class="num">${c.n}</td></tr><tr><td>Erupted since 1900</td><td class="num">${c.n1900}</td></tr><tr><td>Erupted since 2000</td><td class="num">${c.n2000}</td></tr><tr><td>Eruptions in the list</td><td class="num">${fmt(c.ne)}</td></tr></table>
+<h4>People near its volcanoes</h4><table><tr><td></td><td class="num"><small>at least</small></td><td class="num"><small>sum</small></td></tr>${[10, 30, 100].map(k => `<tr><td>${k} km</td><td class="num">${mshort(c["f" + k])}</td><td class="num"><small>${mshort(c["s" + k])}</small></td></tr>`).join("")}</table><p class="sub">"At least" counts each person once; the sum counts people near several volcanoes more than once.</p>
+<h4>Most crowded (within 30 km)</h4><table>` + vs.slice(0, 12).map(v => `<tr><td><span class="sw" style="background:${ecol(v.k)}"></span><span class="go" data-v="${v.id}">${esc(v.n)}</span></td><td class="num">${v.p[30] == null ? "n/a" : mshort(v.p[30])}</td></tr>`).join("") + `</table>`; }
+  } else {
+    h = `<h4>The world</h4><div class="big">${fmt(R.n_volc)} volcanoes</div><p>At least <b>${mfmt(R.glob["30"].floor)}</b> people live within 30 km of one, and at least <b>${mfmt(R.glob["10"].floor)}</b> within 10 km.</p><h4>Most crowded (within ${S.ring} km)</h4><table>` +
+      VS.filter(v => v.p[S.ring] != null).sort((a, b) => b.p[S.ring] - a.p[S.ring]).slice(0, 15).map(v => `<tr><td><span class="sw" style="background:${ecol(v.k)}"></span><span class="go" data-v="${v.id}">${esc(v.n)}</span> <small>${esc(v.c)}</small></td><td class="num">${mshort(v.p[S.ring])}</td></tr>`).join("") + `</table><p class="sub">Click a volcano for its rings, or a country for its totals.</p>`;
+  }
+  box.innerHTML = h;
+  const b = box.querySelector(".back"); if (b) b.onclick = () => { S.sel = null; S.ciso = null; drawRings(); restyle(); side(); note(""); };
+  box.querySelectorAll("[data-v]").forEach(e => e.onclick = () => pickVolcano(BYID[+e.dataset.v], true));
+  box.querySelectorAll("[data-c]").forEach(e => e.onclick = () => pickCountry(e.dataset.c, true));
+}
+function toMap() { if (small()) document.getElementById("map").scrollIntoView({ behavior: "smooth", block: "start" }); }
+function pickVolcano(v, move) { if (!v) return; S.sel = v; if (move) { map.fitBounds(L.latLng(v.lat, v.lon).toBounds(230000), { maxZoom: 9 }); toMap(); } drawRings(); restyle(); side(); }
+const FITS = { USA: [[18, -170], [64, -65]], RUS: [[40, 120], [62, 175]], FRA: [[-22, 40], [17, 62]], CHL: [[-56, -78], [-17, -66]], NZL: [[-48, 165], [-34, 179]], GBR: [[-60, -70], [57, 0]], NOR: [[58, -10], [80, 30]], ESP: [[27, -19], [44, 4]], PRT: [[32, -32], [42, -6]], ECU: [[-3, -92], [2, -76]], DNK: [[55, -60], [80, 13]], NLD: [[11, -70], [54, 8]] };
+function pickCountry(iso, move) { S.ciso = iso; S.sel = null; drawRings(); if (move) { const f = WORLD.features.find(x => x.properties.iso === iso); if (FITS[iso]) map.fitBounds(FITS[iso]); else if (f) map.fitBounds(L.geoJSON(f).getBounds(), { padding: [10, 10], maxZoom: 7 }); toMap(); } restyle(); side(); note(""); }
+const ZONES = { all: null, java: [[-9.2, 104.5], [-5.5, 116.5]], ido: [[-11, 94], [6, 141]], phl: [[4.5, 116], [21, 127.5]], jpn: [[30, 128], [45.5, 146]], twn: [[21.5, 119], [26.5, 123]], mex: [[15.5, -106], [22.5, -95]], cam: [[8, -93], [16, -82]], andes: [[-25, -82], [6, -64]], ita: [[36.3, 11], [42.5, 17]], naples: [[40.5, 13.8], [41.15, 14.75]], eaf: [[-5, 28], [15, 44]], isl: [[63, -25], [67, -13]], casc: [[40, -125], [50, -118]], ak: [[50, -180], [62, -140]], nz: [[-41, 172], [-36, 179]], car: [[11, -64], [19, -59]] };
+function setRing(r) { S.ring = r; document.querySelectorAll("#ringTabs .btn").forEach(b => b.setAttribute("aria-pressed", +b.dataset.r === r)); legend(); drawPts(); if (!S.sel && !S.ciso) side(); }
+(function tabs() {
+  const row = document.getElementById("ringTabs");
+  [5, 10, 30, 100].forEach(r => { const b = document.createElement("button"); b.className = "btn"; b.dataset.r = r; b.textContent = r + " km"; b.setAttribute("aria-pressed", r === S.ring); b.onclick = () => setRing(r); row.appendChild(b); });
+  const fr = document.getElementById("focusRow");
+  [["all", "World"], ["java", "Java"], ["ido", "Indonesia"], ["phl", "Philippines"], ["jpn", "Japan"], ["twn", "Taiwan"], ["mex", "Mexico"], ["cam", "Central America"], ["andes", "Andes"], ["naples", "Naples"], ["ita", "Southern Italy"], ["eaf", "East Africa"], ["isl", "Iceland"], ["car", "Caribbean"], ["casc", "Cascades"], ["ak", "Alaska"], ["nz", "New Zealand"]].forEach(([k, l]) => {
+    const b = document.createElement("button"); b.className = "btn"; b.textContent = l; b.onclick = () => { S.sel = null; S.ciso = null; drawRings(); map.fitBounds(ZONES[k] || HOME()); restyle(); side(); note(""); toMap(); }; fr.appendChild(b); });
+})();
+
+/* ---------- search ---------- */
+(function search() {
+  const inp = document.getElementById("q"), sug = document.getElementById("sug"); let opts = [], k = -1;
+  const nz = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  function build(q) {
+    const nq = nz(q); if (nq.length < 2) return [];
+    const out = [];
+    VS.forEach(v => { const a = nz(v.n), b = nz(v.al || ""); if (a.includes(nq) || b.includes(nq)) out.push({ t: "v", v, s: (a.startsWith(nq) || b.startsWith(nq) ? 2 : 1) + Math.min(v.p[30] || 0, 1e7) / 1e7 }); });
+    WORLD.features.forEach(f => { const n = f.properties.n; if (nz(n).includes(nq)) out.push({ t: "c", iso: f.properties.iso, n, s: nz(n).startsWith(nq) ? 3 : 1.2 }); });
+    return out.sort((a, b) => b.s - a.s).slice(0, 12);
+  }
+  const lab = o => o.t === "c" ? `${esc(o.n)} <span>country${CT[o.iso] ? ", " + CT[o.iso].n + " volcanoes" : ""}</span>` : `${esc(label(o.v))} <span>${esc(o.v.c)}, last ${esc(o.v.lt)}</span>`;
+  const show = () => { sug.innerHTML = opts.map((o, i) => `<li role="option" aria-selected="${i === k}" data-i="${i}">${lab(o)}</li>`).join(""); sug.style.display = opts.length ? "block" : "none"; };
+  const choose = o => { sug.style.display = "none"; inp.value = o.t === "c" ? o.n : o.v.n; inp.blur(); if (o.t === "c") pickCountry(o.iso, true); else pickVolcano(o.v, true); };
+  inp.addEventListener("input", () => { opts = build(inp.value); k = -1; show(); });
+  inp.addEventListener("keydown", e => { if (e.key === "ArrowDown") { k = Math.min(opts.length - 1, k + 1); show(); e.preventDefault(); } else if (e.key === "ArrowUp") { k = Math.max(0, k - 1); show(); e.preventDefault(); } else if (e.key === "Enter" && opts.length) { choose(opts[Math.max(0, k)]); } else if (e.key === "Escape") { sug.style.display = "none"; } });
+  sug.addEventListener("click", e => { const li = e.target.closest("li"); if (li) choose(opts[+li.dataset.i]); });
+  document.addEventListener("click", e => { if (!e.target.closest(".searchbox")) sug.style.display = "none"; });
+})();
+
+/* ---------- charts ---------- */
+function goVolcano(v) { pickVolcano(v, true); document.getElementById("atlas").scrollIntoView({ behavior: "smooth" }); setTimeout(() => map.fitBounds(L.latLng(v.lat, v.lon).toBounds(230000), { maxZoom: 9 }), 400); }
+function goCountry(iso) { document.getElementById("atlas").scrollIntoView({ behavior: "smooth" }); setTimeout(() => pickCountry(iso, true), 400); }
+function rangeBars(box, rows, opts) {
+  /* rows: {n, lo, hi, tip, click} ; solid bar to lo, pale bar to hi */
+  resp(box, (w, sm) => {
+    const lw = sm ? Math.min(140, w * .4) : Math.min(210, w * .36), rh = opts.rh || 28, h = rows.length * rh + 8, x0 = lw, x1 = w - (sm ? 64 : 92), max = opts.max || Math.max(...rows.map(r => r.hi)) || 1;
+    const svg = el("svg", { viewBox: `0 0 ${w} ${h}`, role: "img", "aria-label": opts.aria }, box);
+    rows.forEach((r, i) => {
+      const y = 4 + i * rh, b1 = Math.max(1, (x1 - x0) * r.hi / max), b0 = Math.max(1.5, (x1 - x0) * r.lo / max), cut = sm ? 18 : 28;
+      const t = lbl(svg, x0 - 8, y + rh / 2 + 4, r.n.length > cut ? r.n.slice(0, cut - 1) + "." : r.n, "lab", "end");
+      const pale = el("rect", { x: x0, y: y + 4, width: b1, height: rh - 10, fill: r.c || css("--hot"), opacity: .22, rx: 2 }, svg);
+      const solid = el("rect", { x: x0, y: y + 4, width: b0, height: rh - 10, fill: r.c || css("--hot"), rx: 2 }, svg);
+      lbl(svg, x0 + Math.min(b1, x1 - x0) + 6, y + rh / 2 + 4, r.lab ?? mshort(r.lo), "lab b");
+      [pale, solid, t].forEach(e => { if (r.tip) { e.addEventListener("mousemove", ev => tip2(ev, r.tip)); e.addEventListener("mouseleave", hideTip); } if (r.click) { e.style.cursor = "pointer"; e.addEventListener("click", ev => { ev.stopPropagation(); r.click(); }); } });
+    });
+  });
+}
+(function charts() {
+  /* 02: global ranges */
+  rangeBars(document.getElementById("rangeChart"), [5, 10, 30, 100].map(k => { const g = R.glob[String(k)]; return { n: `Within ${k} km`, lo: g.floor, hi: g.sum, lab: `${mshort(g.floor)} to ${mshort(g.sum)}`,
+    tip: `<b>Within ${k} km</b><br>at least ${fmt(g.floor)} people (${fmt(g.floor_n)} non-overlapping volcanoes)<br>sum over all volcanoes ${fmt(g.sum)}` }; }), { aria: "People living near volcanoes, lower and upper bounds", rh: 40 });
+
+  /* 03: countries */
+  let ctr = 30;
+  const ctBox = document.getElementById("ctChart");
+  function drawCt() {
+    ctBox.innerHTML = ""; redraws.length = redraws.length; const rows = Object.values(CT).sort((a, b) => b["f" + ctr] - a["f" + ctr]).slice(0, 15);
+    rangeBars(ctBox, rows.map(c => ({ n: c.name, lo: c["f" + ctr], hi: c["s" + ctr], c: "#B3261E", lab: mshort(c["f" + ctr]),
+      tip: `<b>${esc(c.name)}</b><br>${c.n} Holocene volcanoes, ${c.n2000} erupted since 2000<br>within ${ctr} km: at least ${fmt(c["f" + ctr])}; sum ${fmt(c["s" + ctr])}<br>most crowded: ${esc(c.top)}`, click: () => goCountry(c.iso) })), { aria: "Countries with most people near a volcano" });
+  }
+  const ctT = document.getElementById("ctTabs");
+  [10, 30, 100].forEach(r => { const b = document.createElement("button"); b.className = "btn"; b.textContent = r + " km"; b.setAttribute("aria-pressed", r === ctr); b.onclick = () => { ctr = r; ctT.querySelectorAll(".btn").forEach(x => x.setAttribute("aria-pressed", x === b)); drawCt(); }; ctT.appendChild(b); });
+  drawCt();
+
+  /* 04: top volcanoes */
+  let tr = 30;
+  const topBox = document.getElementById("topChart");
+  function hbars(box, rows, aria) {
+    resp(box, (w, sm) => {
+      const lw = sm ? Math.min(150, w * .44) : Math.min(240, w * .4), rh = 26, h = rows.length * rh + 10, x0 = lw, x1 = w - 58, max = Math.max(...rows.map(r => r.v)) || 1;
+      const svg = el("svg", { viewBox: `0 0 ${w} ${h}`, role: "img", "aria-label": aria }, box);
+      rows.forEach((r, i) => {
+        const y = 4 + i * rh, bw = Math.max(2, (x1 - x0) * r.v / max), cut = sm ? 19 : 30;
+        const t = lbl(svg, x0 - 8, y + 16, r.n.length > cut ? r.n.slice(0, cut - 1) + "." : r.n, "lab", "end");
+        const b = el("rect", { x: x0, y: y + 3, width: bw, height: rh - 9, fill: r.c, rx: 2 }, svg);
+        lbl(svg, x0 + bw + 6, y + 16, r.lab ?? mshort(r.v), "lab b");
+        [b, t].forEach(e => { if (r.tip) { e.addEventListener("mousemove", ev => tip2(ev, r.tip)); e.addEventListener("mouseleave", hideTip); } if (r.click) { e.style.cursor = "pointer"; e.addEventListener("click", ev => { ev.stopPropagation(); r.click(); }); } });
+      });
+    });
+  }
+  const vtipH = v => `<b>${esc(label(v))}</b><br>${esc(v.c)} · ${esc(v.type)} · last eruption ${esc(v.lt)}<br>` + [5, 10, 30, 100].map(k => `within ${k} km: ${fmt(v.p[k])}`).join("<br>");
+  function drawTop() { topBox.innerHTML = ""; const rows = VS.filter(v => v.p[tr] != null).sort((a, b) => b.p[tr] - a.p[tr]).slice(0, 20);
+    hbars(topBox, rows.map(v => ({ n: v.n + (v.p[10] === v.p[30] && v.p[30] > 1e4 ? " *" : ""), v: v.p[tr], c: ecol(v.k), tip: vtipH(v), click: () => goVolcano(v) })), "Most crowded volcanoes"); }
+  const tT = document.getElementById("topTabs");
+  [5, 10, 30, 100].forEach(r => { const b = document.createElement("button"); b.className = "btn"; b.textContent = r + " km"; b.setAttribute("aria-pressed", r === tr); b.onclick = () => { tr = r; tT.querySelectorAll(".btn").forEach(x => x.setAttribute("aria-pressed", x === b)); drawTop(); }; tT.appendChild(b); });
+  drawTop();
+  document.getElementById("topLeg").innerHTML = ECL.map(c => `<span><i style="background:${c[2]}"></i>${esc(c[1])}</span>`).join("") + `<span>* same figure at 10 and 30 km (large volcanic field)</span>`;
+
+  /* 05: recent */
+  hbars(document.getElementById("recentChart"), R.recent.map(r => { const v = BYID[r.vnum]; return { n: v.n, v: v.p[30], c: ecol(v.k), lab: `${mshort(v.p[30])} · ${v.last}`, tip: vtipH(v), click: () => goVolcano(v) }; }), "Crowded volcanoes that have erupted since 2000");
+  rangeBars(document.getElementById("eclsChart"), R.by_ecls.map(b => ({ n: b.label, lo: b.floor30, hi: b.sum30, c: b.col, lab: mshort(b.floor30),
+    tip: `<b>${esc(b.label)}</b><br>${fmt(b.n)} volcanoes<br>within 30 km: at least ${fmt(b.floor30)}; sum ${fmt(b.sum30)}` })), { aria: "People within 30 km by last eruption" });
+
+  /* 06: centuries: two panels with their own scales, all eruptions and VEI 4 or more */
+  resp(document.getElementById("centChart"), (w, sm) => {
+    const D = R.centuries, ph = sm ? 150 : 170, gap = 34, h = 2 * ph + gap + 30, x0 = 46, x1 = w - 6, bw = (x1 - x0) / D.length;
+    const svg = el("svg", { viewBox: `0 0 ${w} ${h}`, role: "img", "aria-label": "Confirmed eruptions per century, all and VEI 4 or more" }, document.getElementById("centChart"));
+    [["n", "All confirmed eruptions", "#E8743B", 500], ["vei4", "Eruptions of VEI 4 or more", "#7A1712", 20]].forEach(([key, title, col, step], pi) => {
+      const y0 = 18 + pi * (ph + gap), y1 = y0 + ph - 18, mx = Math.max(...D.map(d => d[key]));
+      lbl(svg, x0, y0 - 6, title, "lab b");
+      for (let v = 0; v <= mx; v += step) { const y = y1 - (y1 - y0) * v / mx; el("line", { x1: x0, x2: x1, y1: y, y2: y, stroke: css("--rule") }, svg); lbl(svg, x0 - 6, y + 4, fmt(v), "lab s m", "end"); }
+      D.forEach((d, i) => { const x = x0 + i * bw, hh = (y1 - y0) * d[key] / mx, part = d.c >= 2000;
+        el("rect", { x: x + 1, y: y1 - hh, width: Math.max(1, bw - 2), height: hh, fill: col, opacity: part ? .45 : .9 }, svg);
+        const hit = el("rect", { x, y: y0, width: bw, height: y1 - y0, fill: "transparent" }, svg);
+        hit.addEventListener("mousemove", ev => tip2(ev, `<b>${d.c === 0 ? "1 to 99" : d.c + "s"}${part ? " (to " + R.latest_year + ")" : ""}</b><br>${fmt(d.n)} eruptions at ${fmt(d.volc)} volcanoes<br>VEI 4 or more: ${d.vei4}<br>dated by reported observation: ${fmt(d.obs)}`)); hit.addEventListener("mouseleave", hideTip);
+        if (pi === 1 && d.c % (sm ? 500 : 200) === 0) lbl(svg, x + bw / 2, h - 8, d.c === 0 ? "1" : d.c, "lab s m", "middle"); });
+    });
+    lbl(svg, x1, 12, `last bar: 2000 to ${R.latest_year}`, "lab s m", "end");
+  });
+
+  /* 07: deadliest table */
+  document.getElementById("deadTab").innerHTML = `<thead><tr><th>Year</th><th>Volcano</th><th>Country</th><th class="num">Deaths</th><th class="num">People within 30 km today</th></tr></thead><tbody>` +
+    R.ncei.top.map(t => { const v = t.vnum ? BYID[t.vnum] : null; return `<tr><td>${t.y < 0 ? -t.y + " BCE" : t.y}</td><td>${v ? `<span class="go" data-v="${v.id}">${esc(t.name)}</span>` : esc(t.name)}</td><td>${esc(t.country)}</td><td class="num">${fmt(t.deaths)}</td><td class="num">${v && v.p[30] != null ? fmt(v.p[30]) : ""}</td></tr>`; }).join("") + `</tbody>`;
+  document.querySelectorAll("#deadTab [data-v]").forEach(e => e.onclick = () => goVolcano(BYID[+e.dataset.v]));
+})();
+
+/* ---------- start ---------- */
+document.getElementById("theme").onclick = () => { const r = document.documentElement; r.dataset.theme = isDark() ? "light" : "dark"; setTiles(); legend(); redraws.forEach(f => f()); };
+setTiles(); legend(); side(); placeNames();
+</script>
+/*FULLSCREEN*/
+</body>
+</html>

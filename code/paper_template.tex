@@ -1,0 +1,152 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{fontspec}
+\setmainfont{TeX Gyre Pagella}
+\newfontfamily\headfont{Inter}[UprightFont=*-ExtraBold,BoldFont=*-ExtraBold,Extension=.otf,Path=/usr/share/fonts/opentype/inter/]
+\usepackage[a4paper,margin=2.3cm]{geometry}
+\usepackage{graphicx,booktabs,float,caption,array,xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage{titlesec}
+\usepackage[round]{natbib}
+\usepackage{setspace}
+\setstretch{1.05}
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\textfraction}{0.1}
+\renewcommand{\floatpagefraction}{0.75}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\titleformat{\section}{\headfont\Large}{\thesection}{0.8em}{}
+\titleformat{\subsection}{\headfont\large}{\thesubsection}{0.8em}{}
+\captionsetup{font=small,labelfont=bf}
+\urlstyle{same}
+\hypersetup{pdftitle={In the Shadow of the Volcano: How Many People Live Near the World's Holocene Volcanoes},pdfauthor={Tristan Hotham}}
+
+\begin{document}
+\begin{center}
+{\Large\bfseries In the Shadow of the Volcano\par}
+\vspace{0.4em}
+{\large How many people live near the world's Holocene volcanoes,\\from the Smithsonian's Volcanoes of the World database\par}
+\vspace{1.2em}
+{\large Tristan Hotham\par}
+\vspace{0.3em}
+{\small Independent researcher\\
+ORCID: 0000-0003-4931-9349\\
+DOI: \href{https://doi.org/10.5281/zenodo.23847550}{https://doi.org/10.5281/zenodo.23847550}\par}
+\vspace{0.8em}
+2026
+\end{center}
+
+\begin{quote}
+\small
+\begin{center}\textbf{Abstract}\end{center}
+The Smithsonian Institution's Global Volcanism Program (GVP) lists {{n_volc|int}} volcanoes with evidence of activity in the Holocene and gives, for most of them, the number of people living within 5, 10, 30 and 100 km. Summing those figures counts people who live near several volcanoes more than once. I bound the number of distinct people from below by summing only volcanoes whose circles do not overlap, and from above by the simple sum. At least {{glob.10.floor|m}} people live within 10 km of a Holocene volcano (upper bound {{glob.10.sum|m}}), at least {{glob.30.floor|m}} within 30 km (upper bound {{glob.30.sum|m}}) and at least {{glob.100.floor|m}} within 100 km. Indonesia accounts for {{idn_share_floor30|pc}} of the 30 km lower bound, followed by Mexico, Japan, the Philippines and Italy. {{n30_1m|int}} volcanoes have a million or more people within 30 km; the most crowded are the Tatun Volcanic Group beside Taipei, the Michoac\'an-Guanajuato field in Mexico and Tangkuban Parahu above Bandung. {{recent_n30_1m|int}} volcanoes with a million or more people within 30 km have erupted since 2000. Recorded eruptions rise {{ratio_all_1900_1600|f1}}-fold from the seventeenth to the twentieth century while eruptions of VEI 4 or more rise {{ratio_vei4_1900_1600|f1}}-fold, a pattern that reflects reporting more than volcanism. The population figures are a fixed snapshot from the GVP and the distances are not hazard zones.
+
+\textbf{Keywords:} volcanoes; population exposure; Holocene; Global Volcanism Program; Volcanoes of the World; Ring of Fire; reporting bias; mapping
+\end{quote}
+
+\section{Introduction}
+Volcanoes attract people. Volcanic soils are fertile, volcanic highlands are cooler and wetter than the lowlands around them, and many volcanic arcs are also the backbones of densely settled islands and isthmuses. The result is that some of the world's large cities, from Naples to Mexico City, Manila, Jakarta, Bandung and Taipei, lie within a short distance of a volcano that has erupted in the last 12,000 years.
+
+The reference list of those volcanoes is kept by the Smithsonian Institution's Global Volcanism Program in its database Volcanoes of the World \citep{gvp535}. For each Holocene volcano it records the location, type, elevation, tectonic setting and last known eruption, and it publishes a separate list of dated eruptions. It has also published, for each volcano, the number of people living within 5, 10, 30 and 100 km. Earlier work used figures of this kind to describe the populations exposed to volcanoes worldwide and to build a population exposure index \citep{brown2015}.
+
+This paper is a descriptive companion to an interactive map (\url{{{meta.page}}}). It asks four questions of the GVP data: how many people live near a Holocene volcano, counted so that no one is counted twice; in which countries; near which volcanoes; and how many of those volcanoes have erupted recently. It also looks at the eruption record over time, which says as much about who was watching as about what volcanoes did.
+
+\section{Data}
+\subsection{Volcano and eruption lists}
+The volcano list is the GVP Holocene volcano list from Volcanoes of the World version 5.3.5 \citep{gvp535}, an export whose header records that it was downloaded in 2026. It holds {{n_volc|int}} volcanoes in {{n_countries|int}} countries and territories (a volcano on a border is listed under both countries; {{c.USA.n|int}} are in the United States, {{c.JPN.n|int}} in Japan and {{c.IDN.n|int}} in Indonesia). The eruption list is the GVP list of confirmed Holocene eruptions from the same version, also downloaded in 2026: {{n_erupt|int}} eruptions at {{n_volc_with_erupt|int}} volcanoes, with start dates, the Volcanic Explosivity Index (VEI; \citealt{newhall1982}) where known ({{vei_known_pct|pc}} of eruptions) and the method used to date each eruption. I used copies of both exports posted to public GitHub repositories, identified by their headers; their sources are listed under Data availability.
+
+The GVP records a volcano's last known eruption. For a long eruption this is the date it ended, and for one still continuing it is the current year, so it can be later than the start of the most recent eruption in the eruption list ({{meta.n_last_disagree|int}} volcanoes). {{n_unknown_last|int}} volcanoes have no dated eruption: they are on the list because of other evidence of Holocene activity, such as young lava flows or thermal features.
+
+\subsection{Population figures}
+The GVP's current exports no longer carry the population columns, so I took them from a copy of the volcano list from version 5.1.7 \citep{gvp517}, which does, and joined them by volcano number. Of the {{n_volc|int}} volcanoes in version 5.3.5, {{n_pop|int}} have population figures; the {{meta.n_nopop|int}} without are volcanoes added or renumbered since. The figures are identical to those in a GVP export used by the TidyTuesday project in 2020, so they are a fixed snapshot rather than a series that is updated with each version. The export does not say which population grid or reference year they come from; they should be read as an estimate for the early part of the last decade and are likely to understate today's populations in fast-growing places.
+
+For {{n_flat|int}} volcanoes, most of them large volcanic fields, the GVP gives the same figure at 10 and 30 km. The Michoac\'an-Guanajuato field in Mexico, for example, has {{top10.0.p10|int}} people at every distance from 5 to 100 km. This suggests that for these fields the count covers the whole field rather than circles around its listed point. I keep the GVP's figures and flag these cases.
+
+\subsection{Other sources}
+Deaths come from the NOAA NCEI Global Significant Volcanic Eruptions Database \citep{ncei}, using a copy made in 2024 that holds the {{ncei.n|int}} eruptions with deaths recorded. Plate boundaries are the PB2002 model of \citet{bird2003}. Country outlines and city names are from Natural Earth \citep{naturalearth}.
+
+\section{Methods}
+\textbf{Bounds on the number of people.} Let $P_i(r)$ be the population within $r$ km of volcano $i$. The simple sum $\sum_i P_i(r)$ is an upper bound on the number of distinct people within $r$ km of at least one volcano: each such person is counted at least once, and some several times. For a lower bound, I sort volcanoes by $P_i(r)$ in descending order and keep a volcano if its distance to every volcano already kept is more than $2r$, so that their circles cannot overlap. The populations of kept volcanoes are populations of disjoint areas, so their sum is a true lower bound. The greedy choice keeps the most crowded volcano in each cluster; it is not the best possible lower bound, but it is simple, transparent and close to the upper bound wherever circles rarely overlap. Distances are great-circle distances between the GVP's listed points. The same method is applied within each country and within each group of volcanoes by date of last eruption.
+
+\textbf{Countries.} A volcano is assigned to every country in its GVP country field, so that a volcano on the border of Chile and Argentina counts for both. Populations are those around the volcano and can include people across a border.
+
+\textbf{Eruptions over time.} Confirmed eruptions are counted by century of their start year, and separately for eruptions of VEI 4 or more. The final century covers only 2000 to {{latest_year|yr}} ({{cc.2000.years|int}} years).
+
+\section{Results}
+\subsection{How many people live near a Holocene volcano}
+Table~\ref{tab:bounds} and Figure~\ref{fig:bounds} give the bounds. Within 5 and 10 km the circles of different volcanoes rarely overlap and the two bounds are close: between {{glob.10.floor|m}} and {{glob.10.sum|m}} people live within 10 km of a Holocene volcano. At 30 km the bounds are {{glob.30.floor|m}} and {{glob.30.sum|m}}. At 100 km circles overlap so much ({{glob.100.near_other|int}} of the {{n_pop|int}} volcanoes have another volcano within 200 km) that the simple sum, {{glob.100.sum|bn}}, is far too high; the lower bound is {{glob.100.floor|m}}, and \citet{brown2015}, counting people on a population grid, report a figure of roughly 800 million, between the two.
+
+{{TABLE_BOUNDS}}
+
+\begin{figure}[tbp]\centering\includegraphics[width=.86\textwidth]{f_bounds.png}
+\caption{People within 5, 10, 30 and 100 km of a Holocene volcano. Solid: lower bound (non-overlapping circles). Pale: simple sum over volcanoes (upper bound).}\label{fig:bounds}\end{figure}
+
+Most volcanoes have few neighbours. {{glob.10.zero|int}} of the {{n_pop|int}} volcanoes with figures ({{n10_zero_pct|pc}}) have nobody within 10 km and the median volcano has {{glob.30.median|int}} people within 30 km. The distribution is very skewed: the 20 most crowded volcanoes hold {{top20_share30|pc}} of the 30 km sum and the 100 most crowded {{top100_share30|pc}}. {{n30_1m|int}} volcanoes have at least a million people within 30 km, {{n10_100k|int}} have at least 100,000 within 10 km, and {{n100_10m|int}} have at least ten million within 100 km. Stratovolcanoes, the classic steep cones, make up {{n_strato|int}} of the list and {{strato_share_sum30|pc}} of the 30 km sum; volcanoes in subduction zones account for {{subduction_share_sum30|pc}} of it. Figure~\ref{fig:map} maps the volcanoes by population within 30 km and date of last eruption, with the plate boundaries that outline the Pacific Ring of Fire.
+
+\begin{figure}[tbp]\centering\includegraphics[width=\textwidth]{f_map.png}
+\caption{Holocene volcanoes, sized by population within 30 km and coloured by last known eruption, on a Pacific-centred Equal Earth projection. Dashed lines: plate boundaries \citep{bird2003}.}\label{fig:map}\end{figure}
+
+\subsection{Countries}
+Indonesia stands out (Table~\ref{tab:countries}, Figure~\ref{fig:countries}). It has {{c.IDN.n|int}} Holocene volcanoes, {{c.IDN.n_since2000|int}} of which have erupted since 2000, and at least {{c.IDN.floor30|m}} people within 30 km of one ({{idn_share_floor30|pc}} of the world's lower bound) and {{c.IDN.floor100|m}} within 100 km. Mexico ({{c.MEX.floor30|m}}), Japan ({{c.JPN.floor30|m}}), the Philippines ({{c.PHL.floor30|m}}) and Italy ({{c.ITA.floor30|m}}) follow, and together the top five hold {{c_top5_floor30_share|pc}} of the world lower bound. Taiwan ranks sixth with only {{c.TWN.n|int}} volcanoes, because one is on the edge of Taipei. In Central America the upper and lower bounds differ most: El Salvador and Guatemala have many volcanoes in a small area, so circles overlap widely. Countries with many volcanoes but few neighbours include the United States ({{c.USA.n|int}} volcanoes, at least {{c.USA.floor30|m}} people within 30 km), Russia, Chile and Iceland.
+
+\begin{figure}[tbp]\centering\includegraphics[width=.86\textwidth]{f_countries.png}
+\caption{The fifteen countries with most people within 30 km of their Holocene volcanoes: lower bound (solid) and simple sum (pale).}\label{fig:countries}\end{figure}
+
+{{TABLE_COUNTRIES}}
+
+\subsection{The most crowded volcanoes}
+By population within 30 km the most crowded volcanoes are the Tatun Volcanic Group on the northern edge of Taipei ({{top30.0.p30|int}}), the Michoac\'an-Guanajuato volcanic field in Mexico ({{top30.1.p30|int}}), Tangkuban Parahu above Bandung ({{top30.2.p30|int}}), Penanggungan near Surabaya ({{top30.3.p30|int}}) and Merapi above Yogyakarta ({{top30.4.p30|int}}) (Table~\ref{tab:top}, Figure~\ref{fig:top}). Vesuvius has {{v.vesuvius.p30|int}} people within 30 km and Campi Flegrei {{v.flegrei.p30|int}}; the two are {{ves_cf_km|int}} km apart, and most of Naples falls within 30 km of both, a clear case of the double counting that the lower bound removes. Within 10 km, the leaders are fields and calderas beneath cities: Michoac\'an-Guanajuato, the Tatun group, Campi Flegrei ({{v.flegrei.p10|int}}) and Ilopango beside San Salvador ({{v.ilopango.p10|int}}). Within 100 km, the Javanese volcanoes near Jakarta lead, Gede-Pangrango with {{top100.0.p100|int}} people and Salak with {{top100.1.p100|int}}. Figure~\ref{fig:java} shows how closely Java's volcanoes are packed.
+
+\begin{figure}[tbp]\centering\includegraphics[width=.86\textwidth]{f_top30.png}
+\caption{The twenty volcanoes with most people within 30 km, coloured by last known eruption. An asterisk marks a volcano with the same figure at 10 and 30 km.}\label{fig:top}\end{figure}
+
+{{TABLE_TOP}}
+
+\begin{figure}[tbp]\centering\includegraphics[width=\textwidth]{f_java.png}
+\caption{Java's Holocene volcanoes and their 30 km circles, coloured by last eruption. Overlapping circles are why the simple sum overstates the number of people.}\label{fig:java}\end{figure}
+
+\subsection{Recent eruptions near people}
+{{by_ecls.0.n|int}} volcanoes have erupted since 2000 and {{by_ecls.1.n|int}} last erupted in the twentieth century. At least {{since1900.floor30|m}} people live within 30 km of a volcano that has erupted since 1900, and at least {{by_ecls.0.floor30|m}} within 30 km of one that has erupted since 2000 (Figure~\ref{fig:ecls}). {{recent_n30_1m|int}} volcanoes that have erupted since 2000 have a million or more people within 30 km; the most crowded are Tangkuban Parahu (last eruption {{recent.0.last|yr}}), Merapi, Slamet, Pacaya and Taal (Figure~\ref{fig:recent}). Eruptions that began in {{latest2.y0|yr}} or {{latest2.y1|yr}}, the last years in the list, came from {{latest2.n_volc|int}} volcanoes with {{latest2.sum30|int}} people within 30 km between them, led by Mayon ({{latest2.top.0.p30|int}}). Volcanoes with no dated eruption are not empty: at least {{by_ecls.5.floor30|m}} people live within 30 km of one, a reminder that a volcano without a historical eruption is not necessarily extinct.
+
+\begin{figure}[tbp]\centering\includegraphics[width=.86\textwidth]{f_ecls.png}
+\caption{People within 30 km of volcanoes grouped by last known eruption: lower bound (solid) and simple sum (pale).}\label{fig:ecls}\end{figure}
+
+\begin{figure}[tbp]\centering\includegraphics[width=.86\textwidth]{f_recent.png}
+\caption{The twenty volcanoes that have erupted since 2000 with most people within 30 km, with the year of the last known eruption.}\label{fig:recent}\end{figure}
+
+\subsection{Eruptions through time and reporting bias}
+The eruption list grows steeply towards the present (Figure~\ref{fig:cent}): {{cc.1500.n|int}} confirmed eruptions started in the sixteenth century, {{cc.1600.n|int}} in the seventeenth, {{cc.1700.n|int}} in the eighteenth, {{cc.1800.n|int}} in the nineteenth and {{cc.1900.n|int}} in the twentieth; {{cc.2000.n|int}} started between 2000 and {{latest_year|yr}}, about {{rate_2000|int}} a year against {{rate_1900|int}} a year in the twentieth century. {{share_since1800|pc}} of all Holocene eruptions in the list started in 1800 or later. This is the familiar signature of under-recording in the past \citep{simkin1993,deligne2010}: {{obs_share|pc}} of eruptions are dated by reported observation, so the record depends on people being present to see, and later on instruments and satellites. Eruptions of VEI 4 or more, which leave widespread deposits that can be dated long afterwards, are recorded much more evenly: their number rises {{ratio_vei4_1900_1600|f1}}-fold from the seventeenth to the twentieth century, compared with {{ratio_all_1900_1600|f1}}-fold for all eruptions. {{n_volc_first_after1800|int}} volcanoes have no eruption in the list before 1800. The rising curve should not be read as a rise in volcanic activity.
+
+\begin{figure}[tbp]\centering\includegraphics[width=.86\textwidth]{f_centuries.png}
+\caption{Confirmed eruptions per century of start, 1 CE to {{latest_year|yr}}: all eruptions (top) and eruptions of VEI 4 or more (bottom). The last bar covers 2000 to {{latest_year|yr}} only.}\label{fig:cent}\end{figure}
+
+\subsection{Deaths}
+The NCEI database lists {{ncei.n|int}} eruptions with deaths recorded between 141 BCE and {{ncei.y1|yr}}, with {{ncei.deaths|int}} deaths in total, of which {{ncei.since1900|int}} were in eruptions since 1900. The deadliest are Tambora in 1815 ({{ncei.top.0.deaths|int}}), Krakatau in 1883 ({{ncei.top.1.deaths|int}}), Ilopango around 450 CE ({{ncei.top.2.deaths|int}}), Mont Pel\'ee in 1902 ({{ncei.top.3.deaths|int}}) and Nevado del Ruiz in 1985 ({{ncei.top.4.deaths|int}}). Several of the deadliest volcanoes have few people near them today (Tambora has {{v.tambora.p30|int}} within 30 km), while Ilopango, now on the edge of San Salvador, has {{v.ilopango.p30|int}}.
+
+\section{Discussion}
+Three points stand out. First, the number of people near volcanoes depends heavily on how overlap is handled. Within 10 km it hardly matters; within 100 km a simple sum overstates the true figure several times. Studies that report sums of per-volcano figures should say so, and the bounds here give a cheap check when no population grid is at hand. Second, exposure is concentrated: a small number of countries, led by Indonesia, and a few dozen volcanoes, many in Java, account for most of it. Third, the volcanoes nearest the most people are a mix of very active ones, such as Merapi and Taal, and ones with no historical eruption at all, such as Penanggungan; the GVP's list is a list of volcanoes that could erupt, not only of those that have.
+
+\section{Limitations}
+First, distance is not hazard: the area affected by an eruption depends on its size and style, the shape of the land, the wind and river systems, and the GVP's listed point is a single location for what may be a large field. Second, the population figures are a fixed snapshot of unstated date and source and are joined from an older version of the database; {{meta.n_nopop|int}} volcanoes lack them, and for {{n_flat|int}} the figures are the same at 10 and 30 km. Third, the lower bound uses a greedy choice of non-overlapping circles and can be well below the true figure at 100 km. Fourth, country totals include people across borders. Fifth, the eruption record is incomplete in the past, as shown above, and the death figures for early eruptions are rough estimates. Finally, the volcano and eruption lists were taken from copies posted to GitHub and identified by their headers, not downloaded directly by me.
+
+\section{Conclusion}
+At least {{glob.10.floor|m}} people live within 10 km and at least {{glob.30.floor|m}} within 30 km of a volcano that has been active in the Holocene, most of them in Indonesia, Mexico, Japan, the Philippines, Italy, Taiwan and Central America. The interactive map lets readers find any volcano, see its 10, 30 and 100 km rings and compare its neighbours with its eruption history.
+
+\section*{Data and code availability}
+The interactive map is at \url{{{meta.page}}}. Data and code are at \url{{{meta.repo}}} and archived with this paper at \url{https://doi.org/10.5281/zenodo.23847550}. Inputs: the GVP Holocene volcano list, version 5.3.5 (copy at \url{https://github.com/bciupak/Wizualizacja-Danych-Projekty}), the GVP Holocene eruption list, version 5.3.5 (copy at \url{https://github.com/im-hana-s/ML-mini-project}), and the GVP volcano list with population columns, version 5.1.7 (copy at \url{https://github.com/Matteo2979/Volcano-Analysis}, which also holds the NCEI table). GVP data are used under the Smithsonian's terms of use (non-commercial use with credit), and the derived tables keep those terms. The text and figures are released under CC BY 4.0 and the code under the MIT licence.
+
+\section*{AI statement}
+I wrote the text, with drafting and editing assistance from Claude (Anthropic), which also helped prepare the analysis code. I reviewed and checked all text and results.
+
+\begin{thebibliography}{9}
+\bibitem[Bird(2003)]{bird2003} Bird, P. (2003) An updated digital model of plate boundaries. \emph{Geochemistry, Geophysics, Geosystems}, 4(3), 1027. GeoJSON by H. Ahlenius, Nordpil, Open Data Commons Attribution License 1.0.
+\bibitem[Brown et~al.(2015)]{brown2015} Brown, S.K., Auker, M.R. and Sparks, R.S.J. (2015) Populations around Holocene volcanoes and development of a Population Exposure Index. In Loughlin, S.C., Sparks, R.S.J., Brown, S.K., Jenkins, S.F. and Vye-Brown, C. (eds) \emph{Global Volcanic Hazards and Risk}. Cambridge: Cambridge University Press, 223 to 232.
+\bibitem[Deligne et~al.(2010)]{deligne2010} Deligne, N., Coles, S. and Sparks, R.S.J. (2010) Recurrence rates of large explosive volcanic eruptions. \emph{Journal of Geophysical Research}, 115, B06203.
+\bibitem[GVP(2024)]{gvp517} Global Volcanism Program (2024) Volcanoes of the World (v. 5.1.7). Distributed by Smithsonian Institution, compiled by Venzke, E. \url{https://volcano.si.edu/} (accessed via the named GitHub mirrors).
+\bibitem[GVP(2025)]{gvp535} Global Volcanism Program (2025) Volcanoes of the World (v. 5.3.5). Distributed by Smithsonian Institution, compiled by Venzke, E. \url{https://volcano.si.edu/} (accessed via the named GitHub mirrors).
+\bibitem[Natural Earth(2026)]{naturalearth} Natural Earth (2026) Admin 0 countries and populated places. Public domain. \url{https://www.naturalearthdata.com/}
+\bibitem[NCEI(2024)]{ncei} National Geophysical Data Center / World Data Service (NGDC/WDS) NCEI/WDS Global Significant Volcanic Eruptions Database. NOAA National Centers for Environmental Information. doi:10.7289/V5JW8BSH.
+\bibitem[Newhall and Self(1982)]{newhall1982} Newhall, C.G. and Self, S. (1982) The volcanic explosivity index (VEI): an estimate of explosive magnitude for historical volcanism. \emph{Journal of Geophysical Research}, 87(C2), 1231 to 1238.
+\bibitem[Simkin and Siebert(1994)]{simkin1993} Simkin, T. and Siebert, L. (1994) \emph{Volcanoes of the World}, 2nd edition. Tucson: Geoscience Press and Smithsonian Institution.
+\end{thebibliography}
+\end{document}

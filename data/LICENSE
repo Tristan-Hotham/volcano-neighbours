@@ -1,0 +1,13 @@
+Data in this folder
+
+The volcano, eruption and population values are taken or derived from the Smithsonian Institution Global Volcanism
+Program database, Volcanoes of the World, and are shared under the Smithsonian's terms of use
+(https://volcano.si.edu/gvp_termsofuse.cfm): free for non-commercial use, with credit. Please cite:
+
+  Global Volcanism Program, 2025. Volcanoes of the World (v. 5.3.5). Distributed by Smithsonian Institution, compiled by Venzke, E. https://volcano.si.edu/ (accessed via the named GitHub mirrors)
+  Global Volcanism Program, 2024. Volcanoes of the World (v. 5.1.7). Distributed by Smithsonian Institution, compiled by Venzke, E. Population snapshot. https://volcano.si.edu/ (accessed via the named GitHub mirrors)
+
+Deaths (NOAA NCEI Global Significant Volcanic Eruptions Database, doi:10.7289/V5JW8BSH) are US Government data in the
+public domain. Plate boundaries in page/plates.json: Bird (2003), GeoJSON by Hugo Ahlenius, Nordpil, Open Data Commons
+Attribution License 1.0. Country outlines and city names in page/: Natural Earth, public domain.
+Derived counts and bounds (countries.csv, results.json, eruptions_by_century.csv) are by Tristan Hotham (2026).
