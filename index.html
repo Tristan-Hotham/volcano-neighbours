@@ -395,7 +395,7 @@ const cLayer = L.geoJSON(WORLD, { pane: "fill", style: cStyle, onEachFeature: (f
 const ptLayer = L.layerGroup().addTo(map), ringLayer = L.layerGroup().addTo(map);
 const ecol = k => ECL[k][2];
 const RMAX = { 5: 5.8e6, 10: 5.8e6, 30: 6.8e6, 100: 4.1e7 };
-const radius = (v, z) => { const p = v.p[S.ring]; const k = Math.max(.75, Math.min(1.45, .8 + (z - 2) * .22)); return p == null ? 2.2 * k : Math.max(2.2, 17 * Math.sqrt(p / RMAX[S.ring])) * k; };
+const radius = (v, z) => { const p = v.p[S.ring]; const k = Math.max(1, Math.min(1.45, .8 + (z - 2) * .22)); return p == null ? 2.2 * k : Math.max(2.2, 17 * Math.sqrt(p / RMAX[S.ring])) * k; };
 function vTip(v) { const p = v.p[S.ring]; return `<b>${esc(label(v))}</b><br>${esc(v.c)} · last eruption ${esc(v.lt)}<br>${p == null ? "no population figure" : fmt(p) + " people within " + S.ring + " km"}`; }
 function visible(v) { return !S.hide.has(v.k) && (LY.unk || v.k !== 5); }
 function drawPts() {
